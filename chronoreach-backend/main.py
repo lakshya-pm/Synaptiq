@@ -5,6 +5,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 import database
 
+import asyncio
+
 scheduler = AsyncIOScheduler(timezone=os.getenv("TZ", "Asia/Kolkata"))
 
 @asynccontextmanager
@@ -13,8 +15,12 @@ async def lifespan(app: FastAPI):
     await database.init_db()
     # Start the scheduler
     scheduler.start()
+    # Start Gmail inbox monitor (reply detection)
+    from services.inbox_monitor import inbox_monitor_loop
+    monitor_task = asyncio.create_task(inbox_monitor_loop())
     yield
-    # Shutdown scheduler
+    # Shutdown
+    monitor_task.cancel()
     scheduler.shutdown()
 
 app = FastAPI(title="ChronoReach API", lifespan=lifespan)
