@@ -169,6 +169,18 @@ class WorkflowExecutor:
                     return  # Paused for real scheduling
             elif node_type == "send_email":
                 await self._handle_send_email(node, lead, session)
+                # After sending the email, STOP the pipeline.
+                # Post-send nodes (condition, clawbot, meeting) are handled
+                # by the Demo Controls / simulation endpoints, not the executor.
+                cl_stmt = select(CampaignLead).where(CampaignLead.campaign_id==self.campaign_id, CampaignLead.lead_id==lead.id)
+                cl = (await session.execute(cl_stmt)).scalar_one_or_none()
+                if cl:
+                    cl.status = "completed"
+                    cl.current_node_id = node_id
+                    await session.commit()
+                await self._log_event(lead.id, "done", "lead_completed",
+                    {"lead_name": f"{lead.first_name} {lead.last_name}", "email": lead.email}, session)
+                return
             elif node_type == "condition":
                 next_node_id = await self._handle_condition(node, lead, session)
                 if next_node_id:

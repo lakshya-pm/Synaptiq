@@ -1,66 +1,52 @@
 # services/copilot_service.py
 """
 Synaptiq Campaign Copilot Service
-Returns a clean single-email workflow template instantly.
-No LLM call — instant response, no hangs.
+Returns a rich multi-node workflow DAG instantly.
 """
 
-import os
-import json
 import uuid
-
-import google.generativeai as genai
-from tenacity import retry, stop_after_attempt, wait_exponential
-
-genai.configure(api_key=os.getenv("GEMINI_API_KEY", ""))
-flash_model = genai.GenerativeModel("gemini-2.0-flash")
-
-# ---------------------------------------------------------------------------
-# Allowed node types for validation
-# ---------------------------------------------------------------------------
 
 ALLOWED_NODE_TYPES = {
     "trigger", "blocklist", "ai_message", "delay",
     "send_email", "condition", "clawbot",
 }
 
-# ---------------------------------------------------------------------------
-# Templates — ALL are single-email pipelines (no multi-send loops)
-# ---------------------------------------------------------------------------
-
 
 def _uid() -> str:
     return str(uuid.uuid4())
 
 
-TEMPLATE_1STEP = {
-    "nodes": [
-        {"id": _uid(), "node_type": "trigger", "label": "⚡ Start", "config": {}, "position_x": 0, "position_y": 300},
-        {"id": _uid(), "node_type": "blocklist", "label": "🛡️ Blocklist", "config": {"domains": ["zoho.com", "salesforce.com", "hubspot.com"]}, "position_x": 200, "position_y": 300},
-        {"id": _uid(), "node_type": "ai_message", "label": "🤖 AI Draft", "config": {"step": 1}, "position_x": 400, "position_y": 300},
-        {"id": _uid(), "node_type": "delay", "label": "⏳ Smart Timing", "config": {"delay_hours": 1}, "position_x": 600, "position_y": 300},
-        {"id": _uid(), "node_type": "send_email", "label": "📧 Send Email", "config": {}, "position_x": 800, "position_y": 300},
-    ],
-    "edges": [],  # Will be auto-wired
-}
+# ---------------------------------------------------------------------------
+# Rich Copilot Template — 8 nodes matching the user's spec
+# This is what gets generated when user clicks Copilot and describes a campaign
+# ---------------------------------------------------------------------------
 
-TEMPLATE_3STEP = {
+COPILOT_TEMPLATE = {
     "nodes": [
-        {"id": "t1", "node_type": "trigger", "label": "⚡ Start", "config": {}, "position_x": 0, "position_y": 300},
-        {"id": "b1", "node_type": "blocklist", "label": "🛡️ Blocklist", "config": {"domains": ["zoho.com", "salesforce.com", "hubspot.com"]}, "position_x": 200, "position_y": 300},
-        {"id": "m1", "node_type": "ai_message", "label": "🤖 AI Draft", "config": {"step": 1}, "position_x": 400, "position_y": 300},
-        {"id": "d1", "node_type": "delay", "label": "⏳ Smart Timing", "config": {"delay_hours": 1}, "position_x": 600, "position_y": 300},
+        {"id": "t1", "node_type": "trigger", "label": "⚡ Trigger", "config": {}, "position_x": 0, "position_y": 300},
+        {"id": "b1", "node_type": "blocklist", "label": "🛡️ Blocklist Guard", "config": {"domains": ["zoho.com", "salesforce.com", "hubspot.com", "freshworks.com"]}, "position_x": 200, "position_y": 300},
+        {"id": "m1", "node_type": "ai_message", "label": "🤖 AI Draft Email", "config": {"step": 1}, "position_x": 400, "position_y": 300},
+        {"id": "d1", "node_type": "delay", "label": "⏳ Smart Delay", "config": {"delay_hours": 1, "min_hours": 0.5, "max_hours": 2}, "position_x": 600, "position_y": 300},
         {"id": "s1", "node_type": "send_email", "label": "📧 Send Email", "config": {}, "position_x": 800, "position_y": 300},
+        {"id": "c1", "node_type": "condition", "label": "🔀 Replied?", "config": {"check": "reply_received"}, "position_x": 1000, "position_y": 300},
+        {"id": "cb1", "node_type": "clawbot", "label": "🦅 ClawBot Alert", "config": {"threshold": 2}, "position_x": 1200, "position_y": 300},
+        {"id": "s2", "node_type": "send_email", "label": "📅 Book Meeting", "config": {"action": "meeting"}, "position_x": 1400, "position_y": 300},
     ],
     "edges": [
         {"source": "t1", "target": "b1"},
         {"source": "b1", "target": "m1"},
         {"source": "m1", "target": "d1"},
         {"source": "d1", "target": "s1"},
+        {"source": "s1", "target": "c1"},
+        {"source": "c1", "target": "cb1", "condition_label": "no_reply"},
+        {"source": "cb1", "target": "s2"},
     ],
 }
 
-TEMPLATE_5STEP = TEMPLATE_3STEP  # Alias — all templates are single-email now
+# Aliases
+TEMPLATE_1STEP = COPILOT_TEMPLATE
+TEMPLATE_3STEP = COPILOT_TEMPLATE
+TEMPLATE_5STEP = COPILOT_TEMPLATE
 
 
 # ---------------------------------------------------------------------------
@@ -101,7 +87,6 @@ def validate_workflow_json(data: dict) -> tuple[bool, list[str]]:
 
 
 async def natural_language_to_workflow(description: str) -> dict:
-    """Return the clean single-email workflow template instantly.
-    No Gemini call — the LLM is unreliable and causes 30s+ hangs."""
-    print(f"[Copilot] ⚡ Instant workflow for: {description[:80]}...")
-    return TEMPLATE_3STEP
+    """Return the rich copilot workflow template instantly."""
+    print(f"[Copilot] ⚡ Generating workflow for: {description[:80]}...")
+    return COPILOT_TEMPLATE

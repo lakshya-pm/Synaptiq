@@ -9,20 +9,26 @@ from datetime import datetime, timedelta
 
 router = APIRouter(prefix="/api/campaigns", tags=["campaigns"])
 
-# Default workflow template when no copilot workflow exists
+# Default workflow template — matches the copilot-generated pipeline
 DEFAULT_WORKFLOW = {
     "nodes": [
-        {"id": "t1", "node_type": "trigger", "label": "Start", "config": {}},
-        {"id": "b1", "node_type": "blocklist", "label": "Blocklist Filter", "config": {"domains": ["zoho.com", "salesforce.com", "hubspot.com"]}},
-        {"id": "m1", "node_type": "ai_message", "label": "Draft Intro Email", "config": {"step": 1}},
-        {"id": "d1", "node_type": "delay", "label": "Jitter Delay", "config": {"delay_hours": 1}},
-        {"id": "s1", "node_type": "send_email", "label": "Send Email", "config": {}},
+        {"id": "t1", "node_type": "trigger", "label": "⚡ Trigger", "config": {}},
+        {"id": "b1", "node_type": "blocklist", "label": "🛡️ Blocklist Guard", "config": {"domains": ["zoho.com", "salesforce.com", "hubspot.com", "freshworks.com"]}},
+        {"id": "m1", "node_type": "ai_message", "label": "🤖 AI Draft Email", "config": {"step": 1}},
+        {"id": "d1", "node_type": "delay", "label": "⏳ Smart Delay", "config": {"delay_hours": 1}},
+        {"id": "s1", "node_type": "send_email", "label": "📧 Send Email", "config": {}},
+        {"id": "c1", "node_type": "condition", "label": "🔀 Replied?", "config": {"check": "reply_received"}},
+        {"id": "cb1", "node_type": "clawbot", "label": "🦅 ClawBot Alert", "config": {"threshold": 2}},
+        {"id": "s2", "node_type": "send_email", "label": "📅 Book Meeting", "config": {"action": "meeting"}},
     ],
     "edges": [
         {"source": "t1", "target": "b1"},
         {"source": "b1", "target": "m1"},
         {"source": "m1", "target": "d1"},
         {"source": "d1", "target": "s1"},
+        {"source": "s1", "target": "c1"},
+        {"source": "c1", "target": "cb1", "condition_label": "no_reply"},
+        {"source": "cb1", "target": "s2"},
     ],
 }
 
