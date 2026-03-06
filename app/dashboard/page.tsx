@@ -49,27 +49,194 @@ function DashboardNavbar() {
   );
 }
 
+/* ─── Draggable Leads Panel ───────────────────────────────────────── */
+function LeadsFloatingPanel({ leads }: { leads: Record<string, string>[] }) {
+  const [pos, setPos] = useState({ x: 284, y: 92 });
+  const dragging = useRef<{ startX: number; startY: number; origX: number; origY: number } | null>(null);
+
+  const getLeadName = (lead: Record<string, string>) =>
+    lead["Name"] ?? lead["name"] ?? lead["NAME"] ?? lead["Full Name"] ?? Object.values(lead)[0] ?? "—";
+  const getLeadSub = (lead: Record<string, string>) =>
+    lead["Email"] ?? lead["email"] ?? lead["EMAIL"] ??
+    lead["Company"] ?? lead["company"] ?? lead["COMPANY"] ??
+    Object.values(lead)[1] ?? "";
+
+  const onDragStart = (e: React.MouseEvent) => {
+    e.preventDefault();
+    dragging.current = { startX: e.clientX, startY: e.clientY, origX: pos.x, origY: pos.y };
+    const onMove = (ev: MouseEvent) => {
+      if (!dragging.current) return;
+      setPos({
+        x: dragging.current.origX + ev.clientX - dragging.current.startX,
+        y: dragging.current.origY + ev.clientY - dragging.current.startY,
+      });
+    };
+    const onUp = () => {
+      dragging.current = null;
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+    };
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+  };
+
+  const palette = [
+    ["rgba(168,85,247,0.18)", "#7c3aed"],
+    ["rgba(59,130,246,0.18)",  "#1d4ed8"],
+    ["rgba(34,197,94,0.18)",   "#15803d"],
+    ["rgba(245,158,11,0.18)",  "#b45309"],
+    ["rgba(239,68,68,0.18)",   "#b91c1c"],
+  ];
+
+  return (
+    <div style={{ position: "fixed", left: pos.x, top: pos.y, zIndex: 90, width: 300 }}>
+      <div
+        style={{
+          background: "linear-gradient(145deg, rgba(255,255,255,0.94) 0%, rgba(245,240,255,0.92) 48%, rgba(237,233,254,0.90) 100%)",
+          backdropFilter: "blur(28px) saturate(2)",
+          border: "1px solid rgba(168,85,247,0.22)",
+          borderRadius: 20,
+          boxShadow: "0 8px 40px rgba(168,85,247,0.18), 0 4px 20px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.90)",
+          overflow: "hidden",
+        }}
+      >
+        {/* ── Drag handle header ── */}
+        <div
+          onMouseDown={onDragStart}
+          style={{
+            cursor: "grab",
+            userSelect: "none",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            padding: "11px 14px",
+            background: "rgba(255,255,255,0.65)",
+            borderBottom: "1px solid rgba(168,85,247,0.13)",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#a855f7" strokeWidth="2">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+              <circle cx="9" cy="7" r="4" />
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+              <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+            </svg>
+            <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#7c3aed" }}>
+              Leads
+            </span>
+            {leads.length > 0 && (
+              <span style={{ fontSize: 10, fontWeight: 700, background: "rgba(168,85,247,0.15)", color: "#7c3aed", borderRadius: 999, padding: "1px 8px" }}>
+                {leads.length}
+              </span>
+            )}
+          </div>
+          {/* 6-dot drag indicator */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 2.5, opacity: 0.38 }}>
+            {[0, 1].map(r => (
+              <div key={r} style={{ display: "flex", gap: 2.5 }}>
+                {[0, 1, 2].map(c => (
+                  <div key={c} style={{ width: 3, height: 3, borderRadius: "50%", background: "#7c3aed" }} />
+                ))}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* ── Lead rows ── */}
+        <div
+          style={{ maxHeight: 390, overflowY: "auto", padding: "8px" }}
+          className="[&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-purple-200"
+        >
+          {leads.length === 0 ? (
+            <div style={{ padding: "32px 0", display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
+              <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="rgba(168,85,247,0.25)" strokeWidth="1.5">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                <circle cx="9" cy="7" r="4" />
+              </svg>
+              <p style={{ fontSize: 11, color: "#94a3b8", textAlign: "center", lineHeight: 1.6, margin: 0 }}>
+                No leads uploaded yet.<br />Go to Setup to upload a CSV / Excel file.
+              </p>
+            </div>
+          ) : (
+            leads.map((lead, i) => {
+              const name = getLeadName(lead);
+              const sub  = getLeadSub(lead);
+              const initial = name.charAt(0).toUpperCase();
+              const [avatarBg, avatarColor] = palette[i % palette.length];
+              return (
+                <div
+                  key={i}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 10,
+                    padding: "8px 10px",
+                    borderRadius: 14,
+                    background: "rgba(255,255,255,0.62)",
+                    border: "1px solid rgba(168,85,247,0.09)",
+                    marginBottom: i < leads.length - 1 ? 6 : 0,
+                  }}
+                >
+                  <div
+                    style={{
+                      width: 34, height: 34,
+                      borderRadius: "50%",
+                      background: avatarBg,
+                      color: avatarColor,
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      fontSize: 12, fontWeight: 700,
+                      flexShrink: 0,
+                      border: `1.5px solid ${avatarColor}30`,
+                    }}
+                  >
+                    {initial}
+                  </div>
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <p style={{ fontSize: 12, fontWeight: 600, color: "#1e293b", margin: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                      {name}
+                    </p>
+                    {sub && (
+                      <p style={{ fontSize: 10, color: "#94a3b8", margin: "2px 0 0", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                        {sub}
+                      </p>
+                    )}
+                  </div>
+                  <div style={{ width: 6, height: 6, borderRadius: "50%", background: avatarColor, opacity: 0.45, flexShrink: 0 }} />
+                </div>
+              );
+            })
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function DashboardPage() {
   const [config, setConfig] = useState<AgentConfig>(defaultAgentConfig);
+  const [leads, setLeads] = useState<Record<string, string>[]>([]);
 
   useEffect(() => {
     try {
       const raw = localStorage.getItem("agentConfig");
       if (raw) setConfig(JSON.parse(raw) as AgentConfig);
-    } catch {
-      // keep default
-    }
+    } catch { /* keep default */ }
+    try {
+      const rawLeads = localStorage.getItem("leadsData");
+      if (rawLeads) setLeads(JSON.parse(rawLeads) as Record<string, string>[]);
+    } catch { /* ignore */ }
   }, []);
 
   const nodeData = [
-    { id: 0, label: "Start",     sub: "Trigger",   x: 60,  y: 80,  bg: "rgba(59,130,246,0.18)",  border: "rgba(59,130,246,0.40)",  glow: "rgba(59,130,246,0.20)",  icon: <svg className="w-6 h-6 text-blue-400"   viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16" fill="currentColor" stroke="none"/></svg> },
-    { id: 1, label: "Qualify",   sub: "AI filter",  x: 240, y: 80,  bg: "rgba(168,85,247,0.18)",  border: "rgba(168,85,247,0.40)",  glow: "rgba(168,85,247,0.20)",  icon: <svg className="w-6 h-6 text-purple-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z"/></svg> },
-    { id: 2, label: "Send",      sub: "Email/SMS",  x: 420, y: 80,  bg: "rgba(34,197,94,0.18)",   border: "rgba(34,197,94,0.40)",   glow: "rgba(34,197,94,0.20)",   icon: <svg className="w-6 h-6 text-green-400"  viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg> },
-    { id: 3, label: "Follow Up", sub: "D+3 auto",   x: 600, y: 80,  bg: "rgba(245,158,11,0.18)",  border: "rgba(245,158,11,0.40)",  glow: "rgba(245,158,11,0.20)",  icon: <svg className="w-6 h-6 text-amber-400"  viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> },
-    { id: 4, label: "Convert",   sub: "Close 🎯",    x: 780, y: 80,  bg: "rgba(239,68,68,0.18)",   border: "rgba(239,68,68,0.40)",   glow: "rgba(239,68,68,0.20)",   icon: <svg className="w-6 h-6 text-red-400"    viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg> },
+    { id: 0, label: "Start",     sub: "Trigger",   x: 40,  y: 60,  bg: "rgba(59,130,246,0.18)",  border: "rgba(59,130,246,0.40)",  glow: "rgba(59,130,246,0.35)",  icon: <svg className="w-9 h-9 text-blue-500"   viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16" fill="currentColor" stroke="none"/></svg> },
+    { id: 1, label: "Qualify",   sub: "AI filter",  x: 250, y: 60,  bg: "rgba(168,85,247,0.18)",  border: "rgba(168,85,247,0.40)",  glow: "rgba(168,85,247,0.35)",  icon: <svg className="w-9 h-9 text-purple-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z"/></svg> },
+    { id: 2, label: "Send",      sub: "Email/SMS",  x: 460, y: 60,  bg: "rgba(34,197,94,0.18)",   border: "rgba(34,197,94,0.40)",   glow: "rgba(34,197,94,0.35)",   icon: <svg className="w-9 h-9 text-green-500"  viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg> },
+    { id: 3, label: "Follow Up", sub: "D+3 auto",   x: 670, y: 60,  bg: "rgba(245,158,11,0.18)",  border: "rgba(245,158,11,0.40)",  glow: "rgba(245,158,11,0.35)",  icon: <svg className="w-9 h-9 text-amber-500"  viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> },
+    { id: 4, label: "Convert",   sub: "Close 🎯",    x: 880, y: 60,  bg: "rgba(239,68,68,0.18)",   border: "rgba(239,68,68,0.40)",   glow: "rgba(239,68,68,0.35)",   icon: <svg className="w-9 h-9 text-red-500"    viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg> },
   ];
 
   const [nodes, setNodes] = useState(nodeData.map(n => ({ ...n })));
+  const [hoveredNode, setHoveredNode] = useState<number | null>(null);
   const draggingNode = useRef<{ id: number; startX: number; startY: number; origX: number; origY: number } | null>(null);
 
   const onNodeMouseDown = (e: React.MouseEvent, id: number) => {
@@ -80,7 +247,9 @@ export default function DashboardPage() {
       if (!draggingNode.current) return;
       const dx = ev.clientX - draggingNode.current.startX;
       const dy = ev.clientY - draggingNode.current.startY;
-      setNodes(prev => prev.map(n => n.id === id ? { ...n, x: draggingNode.current!.origX + dx, y: draggingNode.current!.origY + dy } : n));
+      const origX = draggingNode.current.origX;
+      const origY = draggingNode.current.origY;
+      setNodes(prev => prev.map(n => n.id === id ? { ...n, x: origX + dx, y: origY + dy } : n));
     };
     const onUp = () => {
       draggingNode.current = null;
@@ -132,7 +301,7 @@ export default function DashboardPage() {
             backdropFilter: "blur(24px) saturate(1.8)",
             border: "1px solid rgba(255,255,255,0.85)",
             boxShadow: "0 8px 40px rgba(0,0,0,0.08)",
-            minHeight: 260,
+            minHeight: 420,
           }}
         >
           {/* Dot grid */}
@@ -150,13 +319,13 @@ export default function DashboardPage() {
           </p>
 
           {/* Nodes */}
-          <div className="relative" style={{ height: 220 }}>
+          <div className="relative" style={{ height: 340 }}>
             {/* SVG edges */}
             <svg className="absolute inset-0 w-full h-full pointer-events-none" style={{ overflow: "visible" }}>
               {nodes.slice(0, -1).map((n, i) => {
                 const next = nodes[i + 1];
-                const x1 = n.x + 28; const y1 = n.y + 28;
-                const x2 = next.x + 28; const y2 = next.y + 28;
+                const x1 = n.x + 44; const y1 = n.y + 44;
+                const x2 = next.x + 44; const y2 = next.y + 44;
                 return (
                   <line key={i} x1={x1} y1={y1} x2={x2} y2={y2}
                     stroke="rgba(59,130,246,0.30)" strokeWidth="2"
@@ -165,28 +334,51 @@ export default function DashboardPage() {
                 );
               })}
             </svg>
-            {nodes.map(({ id, label, sub, x, y, bg, border, glow, icon }) => (
-              <div
-                key={id}
-                onMouseDown={(e) => onNodeMouseDown(e, id)}
-                className="absolute flex flex-col items-center gap-2 select-none"
-                style={{ left: x, top: y, cursor: "grab", width: 72 }}
-              >
+            {nodes.map(({ id, label, sub, x, y, bg, border, glow, icon }) => {
+              const isHovered = hoveredNode === id;
+              return (
                 <div
-                  className="w-14 h-14 rounded-2xl flex items-center justify-center transition-shadow"
-                  style={{ background: bg, border: `1.5px solid ${border}`, boxShadow: `0 0 20px ${glow}` }}
+                  key={id}
+                  onMouseDown={(e) => onNodeMouseDown(e, id)}
+                  onMouseEnter={() => setHoveredNode(id)}
+                  onMouseLeave={() => setHoveredNode(null)}
+                  className="absolute flex flex-col items-center gap-2.5 select-none"
+                  style={{
+                    left: x, top: y,
+                    cursor: "grab",
+                    width: 96,
+                    transform: isHovered ? "scale(1.13) translateY(-4px)" : "scale(1) translateY(0px)",
+                    transition: "transform 0.22s cubic-bezier(0.34,1.56,0.64,1)",
+                    zIndex: isHovered ? 10 : 1,
+                  }}
                 >
-                  {icon}
+                  <div
+                    className="w-20 h-20 rounded-3xl flex items-center justify-center"
+                    style={{
+                      background: bg,
+                      border: `1.5px solid ${border}`,
+                      boxShadow: isHovered
+                        ? `0 0 0 6px ${glow}, 0 0 40px ${glow}, 0 12px 32px rgba(0,0,0,0.12)`
+                        : `0 0 20px ${glow}`,
+                      backdropFilter: "blur(12px)",
+                      transition: "box-shadow 0.22s ease",
+                    }}
+                  >
+                    {icon}
+                  </div>
+                  <div className="text-center">
+                    <p className="text-sm font-bold text-slate-700 whitespace-nowrap">{label}</p>
+                    <p className="text-[11px] text-slate-400 mt-0.5 whitespace-nowrap">{sub}</p>
+                  </div>
                 </div>
-                <div className="text-center">
-                  <p className="text-xs font-bold text-slate-700 whitespace-nowrap">{label}</p>
-                  <p className="text-[10px] text-slate-400 mt-0.5 whitespace-nowrap">{sub}</p>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </div>
+
+      {/* Floating leads panel */}
+      <LeadsFloatingPanel leads={leads} />
 
       {/* Draggable sidebar */}
       <AgentSidebar config={config} activePage="workflow" />

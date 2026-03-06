@@ -5,6 +5,39 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 
+/* ─── Lead parser ──────────────────────────────────────────────────── */
+async function parseLeadsFile(file: File): Promise<Record<string, string>[]> {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    if (file.name.endsWith(".csv")) {
+      reader.onload = (e) => {
+        const text = (e.target?.result as string) ?? "";
+        const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+        if (lines.length < 2) { resolve([]); return; }
+        const headers = lines[0].split(/,(?=(?:[^"]*"[^"]*")*[^"]*$)/).map(h => h.replace(/^"|"$/g, "").trim());
+        const rows = lines.slice(1).map(line => {
+          const cols = line.split(/,(?=(?:[^"]*"[^"]*")*[^"]*$)/).map(c => c.replace(/^"|"$/g, "").trim());
+          const obj: Record<string, string> = {};
+          headers.forEach((h, i) => { obj[h] = cols[i] ?? ""; });
+          return obj;
+        });
+        resolve(rows);
+      };
+      reader.readAsText(file);
+    } else {
+      reader.onload = async (e) => {
+        const XLSX = await import("xlsx");
+        const data = new Uint8Array(e.target?.result as ArrayBuffer);
+        const wb = XLSX.read(data, { type: "array" });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        const rows = XLSX.utils.sheet_to_json<Record<string, string>>(ws, { defval: "" });
+        resolve(rows);
+      };
+      reader.readAsArrayBuffer(file);
+    }
+  });
+}
+
 /* ─── Main Navbar (Logout only) ─────────────────────────────────────── */
 function MainNavbar() {
   return (
@@ -436,7 +469,16 @@ function StepLeads({ onBack, onLaunch }: { onBack: () => void; onLaunch: () => v
         </button>
         <button
           disabled={!file}
-          onClick={onLaunch}
+          onClick={async () => {
+            if (!file) return;
+            try {
+              const leads = await parseLeadsFile(file);
+              localStorage.setItem("leadsData", JSON.stringify(leads));
+            } catch {
+              localStorage.removeItem("leadsData");
+            }
+            onLaunch();
+          }}
           className="flex-[2] py-3 rounded-xl text-sm font-semibold text-white flex items-center justify-center gap-2 transition-all duration-300 hover:scale-[1.02] hover:brightness-110 disabled:opacity-40 disabled:pointer-events-none"
           style={{ background: "linear-gradient(135deg, #3b82f6, #1d4ed8)", boxShadow: "0 0 20px rgba(59,130,246,0.35)" }}
         >
