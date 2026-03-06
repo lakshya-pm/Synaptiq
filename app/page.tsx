@@ -12,7 +12,7 @@ export default function Home() {
       <main className="pt-32 px-6">
         <div className="max-w-4xl mx-auto text-center">
           <h1 className="text-6xl font-bold text-slate-900 mb-6">
-            Welcome to Synaptiq
+            Welcome to Synapt<span className="text-blue-500">IQ</span>
           </h1>
           <p className="text-xl text-slate-600 mb-8">
             Experience the beauty of glassmorphic design

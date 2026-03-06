@@ -5,9 +5,8 @@ import { useState, useEffect, useCallback } from "react";
 
 const navLinks = [
   { href: "/", label: "Home" },
-  { href: "/about", label: "About" },
-  { href: "/services", label: "Services" },
-  { href: "/contact", label: "Contact" },
+  { href: "/#features", label: "Features" },
+  { href: "/#about", label: "About" },
 ];
 
 export default function Navbar() {
@@ -43,19 +42,26 @@ export default function Navbar() {
           className={`relative overflow-hidden rounded-2xl transition-all duration-500
             ${
               scrolled
-                ? "shadow-[0_8px_32px_rgba(0,0,0,0.08)] border border-slate-200/80"
-                : "shadow-[0_4px_24px_rgba(0,0,0,0.04)] border border-slate-200/50"
+                ? "shadow-[0_8px_40px_rgba(59,130,246,0.15)] border border-blue-200/60"
+                : "shadow-[0_4px_24px_rgba(59,130,246,0.08)] border border-white/70"
             }
           `}
           style={{
-            background: scrolled ? "rgba(255,255,255,0.82)" : "rgba(255,255,255,0.65)",
-            backdropFilter: "blur(20px) saturate(1.8)",
+            background: scrolled
+              ? "rgba(255,255,255,0.78)"
+              : "rgba(255,255,255,0.55)",
+            backdropFilter: "blur(24px) saturate(2)",
           }}
         >
-          {/* Subtle cyan shimmer top line */}
+          {/* Glass inner highlight */}
           <div
-            className="pointer-events-none absolute inset-x-0 top-0 h-px opacity-60"
-            style={{ background: "linear-gradient(90deg, transparent, rgba(6,182,212,0.5), transparent)" }}
+            className="pointer-events-none absolute inset-x-0 top-0 h-px"
+            style={{ background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.95), transparent)" }}
+          />
+          {/* Blue shimmer bottom line */}
+          <div
+            className="pointer-events-none absolute inset-x-0 bottom-0 h-px opacity-40"
+            style={{ background: "linear-gradient(90deg, transparent, rgba(59,130,246,0.6), transparent)" }}
           />
 
           <div className="relative z-10 px-6 py-3.5 flex items-center justify-between">
@@ -83,7 +89,7 @@ export default function Navbar() {
                 </svg>
               </div>
               <span className="text-xl font-bold tracking-tight bg-linear-to-r from-slate-900 via-slate-700 to-cyan-600 bg-clip-text text-transparent transition-all duration-300">
-                Synaptiq
+                SynaptIQ
               </span>
             </Link>
 
