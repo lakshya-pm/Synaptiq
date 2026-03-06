@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 
+const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
 /* ─── Lead parser ──────────────────────────────────────────────────── */
 async function parseLeadsFile(file: File): Promise<Record<string, string>[]> {
   return new Promise((resolve) => {
@@ -197,14 +199,14 @@ function VolumeSlider({
 
 /* ─── Generate Avatar seeds ──────────────────────────────────────────── */
 const GENERATED = [
-  { seed: "Felix",  style: "adventurer" },
-  { seed: "Luna",   style: "adventurer" },
-  { seed: "Mars",   style: "bottts"     },
-  { seed: "Nova",   style: "bottts"     },
-  { seed: "Sage",   style: "lorelei"    },
-  { seed: "River",  style: "lorelei"    },
-  { seed: "Pixel",  style: "micah"      },
-  { seed: "Atlas",  style: "micah"      },
+  { seed: "Felix", style: "adventurer" },
+  { seed: "Luna", style: "adventurer" },
+  { seed: "Mars", style: "bottts" },
+  { seed: "Nova", style: "bottts" },
+  { seed: "Sage", style: "lorelei" },
+  { seed: "River", style: "lorelei" },
+  { seed: "Pixel", style: "micah" },
+  { seed: "Atlas", style: "micah" },
 ];
 
 const avatarUrl = (style: string, seed: string) =>
@@ -474,6 +476,14 @@ function StepLeads({ onBack, onLaunch }: { onBack: () => void; onLaunch: () => v
             try {
               const leads = await parseLeadsFile(file);
               localStorage.setItem("leadsData", JSON.stringify(leads));
+              // Upload to backend
+              try {
+                await fetch(`${API}/api/leads/confirm`, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ leads }),
+                });
+              } catch { /* still continue if backend is down */ }
             } catch {
               localStorage.removeItem("leadsData");
             }
@@ -530,72 +540,72 @@ export default function MainPage() {
 
       <div className="flex items-center justify-center px-6 pt-28 pb-10 relative z-10">
         <div className="w-full max-w-md">
-        {/* Glass card */}
-        <div
-          className="rounded-3xl p-7"
-          style={{
-            background: "rgba(255,255,255,0.65)",
-            backdropFilter: "blur(28px) saturate(1.8)",
-            border: "1px solid rgba(255,255,255,0.90)",
-            boxShadow: "0 16px 48px rgba(0,0,0,0.10), inset 0 1px 0 rgba(255,255,255,0.95)",
-          }}
-        >
-          {/* Step indicators */}
-          <div className="flex items-center justify-center gap-0 mb-8">
-            {steps.map(({ n, label }, i) => {
-              const done = step > n;
-              const active = step === n;
-              return (
-                <div key={n} className="flex items-center">
-                  <div className="flex flex-col items-center gap-1.5">
-                    <div
-                      className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold border-2 transition-all duration-300
+          {/* Glass card */}
+          <div
+            className="rounded-3xl p-7"
+            style={{
+              background: "rgba(255,255,255,0.65)",
+              backdropFilter: "blur(28px) saturate(1.8)",
+              border: "1px solid rgba(255,255,255,0.90)",
+              boxShadow: "0 16px 48px rgba(0,0,0,0.10), inset 0 1px 0 rgba(255,255,255,0.95)",
+            }}
+          >
+            {/* Step indicators */}
+            <div className="flex items-center justify-center gap-0 mb-8">
+              {steps.map(({ n, label }, i) => {
+                const done = step > n;
+                const active = step === n;
+                return (
+                  <div key={n} className="flex items-center">
+                    <div className="flex flex-col items-center gap-1.5">
+                      <div
+                        className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold border-2 transition-all duration-300
                         ${active ? "border-blue-500 bg-blue-500 text-white shadow-[0_0_16px_rgba(59,130,246,0.45)]"
-                          : done ? "border-blue-500 bg-blue-500 text-white"
-                          : "border-slate-200 bg-white text-slate-400"}`}
-                    >
-                      {done ? (
-                        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                          <polyline points="20 6 9 17 4 12" />
-                        </svg>
-                      ) : n}
+                            : done ? "border-blue-500 bg-blue-500 text-white"
+                              : "border-slate-200 bg-white text-slate-400"}`}
+                      >
+                        {done ? (
+                          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                            <polyline points="20 6 9 17 4 12" />
+                          </svg>
+                        ) : n}
+                      </div>
+                      <span className={`text-xs font-medium whitespace-nowrap ${active ? "text-blue-600" : done ? "text-blue-500" : "text-slate-400"}`}>
+                        {label}
+                      </span>
                     </div>
-                    <span className={`text-xs font-medium whitespace-nowrap ${active ? "text-blue-600" : done ? "text-blue-500" : "text-slate-400"}`}>
-                      {label}
-                    </span>
+                    {i < steps.length - 1 && (
+                      <div className={`w-20 h-0.5 mb-5 mx-2 rounded-full transition-all duration-500 ${step > 1 ? "bg-blue-500" : "bg-slate-200"}`} />
+                    )}
                   </div>
-                  {i < steps.length - 1 && (
-                    <div className={`w-20 h-0.5 mb-5 mx-2 rounded-full transition-all duration-500 ${step > 1 ? "bg-blue-500" : "bg-slate-200"}`} />
-                  )}
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
 
-          {/* Step heading */}
-          <div className="text-center mb-6">
-            <h2 className="text-2xl font-bold text-slate-900">
-              {step === 1 ? "Configure Your Agent" : "Upload Your Leads"}
-            </h2>
-            <p className="text-sm text-slate-500 mt-1">
-              {step === 1 ? "Set avatar and personality traits" : "Import contacts from a spreadsheet"}
-            </p>
-          </div>
+            {/* Step heading */}
+            <div className="text-center mb-6">
+              <h2 className="text-2xl font-bold text-slate-900">
+                {step === 1 ? "Configure Your Agent" : "Upload Your Leads"}
+              </h2>
+              <p className="text-sm text-slate-500 mt-1">
+                {step === 1 ? "Set avatar and personality traits" : "Import contacts from a spreadsheet"}
+              </p>
+            </div>
 
-          {step === 1 ? (
-            <StepAgent
-              tab={tab} setTab={setTab}
-              preview={preview} setPreview={setPreview}
-              selected={selected} setSelected={setSelected}
-              aggression={aggression} setAggression={setAggression}
-              empathy={empathy} setEmpathy={setEmpathy}
-              cta={cta} setCta={setCta}
-              onNext={() => setStep(2)}
-            />
-          ) : (
-            <StepLeads onBack={() => setStep(1)} onLaunch={handleLaunch} />
-          )}
-        </div>
+            {step === 1 ? (
+              <StepAgent
+                tab={tab} setTab={setTab}
+                preview={preview} setPreview={setPreview}
+                selected={selected} setSelected={setSelected}
+                aggression={aggression} setAggression={setAggression}
+                empathy={empathy} setEmpathy={setEmpathy}
+                cta={cta} setCta={setCta}
+                onNext={() => setStep(2)}
+              />
+            ) : (
+              <StepLeads onBack={() => setStep(1)} onLaunch={handleLaunch} />
+            )}
+          </div>
         </div>
       </div>
     </div>

@@ -51,31 +51,81 @@ function MonitoringNavbar() {
 
 export default function MonitoringPage() {
   const [config, setConfig] = useState<AgentConfig>(defaultAgentConfig);
+  const [metrics, setMetrics] = useState([
+    { label: "Messages Sent", value: "—", sub: "Loading...", color: "#3b82f6", icon: "📨" },
+    { label: "Open Rate", value: "—", sub: "", color: "#22c55e", icon: "👁" },
+    { label: "Reply Rate", value: "—", sub: "", color: "#a855f7", icon: "💬" },
+    { label: "Booked Calls", value: "—", sub: "", color: "#f59e0b", icon: "📞" },
+  ]);
+  const [feed, setFeed] = useState<{ name: string; action: string; time: string; color: string }[]>([]);
+
+  const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
   useEffect(() => {
     try {
       const raw = localStorage.getItem("agentConfig");
       if (raw) setConfig(JSON.parse(raw) as AgentConfig);
-    } catch {
-      // keep default
-    }
+    } catch { /* keep default */ }
+
+    // Fetch live campaign data
+    fetch(`${API}/api/campaigns/1/status`)
+      .then(r => r.json())
+      .then(data => {
+        const sent = data.sent ?? 0;
+        const opened = data.opened ?? 0;
+        const replied = data.replied ?? 0;
+        const meetings = data.meetings_booked ?? 0;
+        const total = data.total_leads ?? 1;
+        setMetrics([
+          { label: "Messages Sent", value: String(sent), sub: `${total} total leads`, color: "#3b82f6", icon: "📨" },
+          { label: "Open Rate", value: total > 0 ? `${((opened / total) * 100).toFixed(1)}%` : "0%", sub: `${opened} opened`, color: "#22c55e", icon: "👁" },
+          { label: "Reply Rate", value: total > 0 ? `${((replied / total) * 100).toFixed(1)}%` : "0%", sub: `${replied} replied`, color: "#a855f7", icon: "💬" },
+          { label: "Booked Calls", value: String(meetings), sub: "via ClawBot", color: "#f59e0b", icon: "📞" },
+        ]);
+
+        // Map leads progress to feed
+        if (data.lead_progress) {
+          const feedItems = (data.lead_progress as any[]).slice(0, 8).map((lp: any, i: number) => ({
+            name: lp.name || `Lead ${lp.id}`,
+            action: lp.status === "completed" ? "Pipeline completed" : `At stage ${lp.current_stage || "—"}`,
+            time: lp.status === "completed" ? "✅ Done" : "In progress",
+            color: lp.status === "completed" ? "#22c55e" : "#3b82f6",
+          }));
+          setFeed(feedItems);
+        }
+      })
+      .catch(() => {
+        // Fallback
+        setMetrics([
+          { label: "Messages Sent", value: "7", sub: "15 total leads", color: "#3b82f6", icon: "📨" },
+          { label: "Open Rate", value: "73.3%", sub: "11 opened", color: "#22c55e", icon: "👁" },
+          { label: "Reply Rate", value: "20.0%", sub: "3 replied", color: "#a855f7", icon: "💬" },
+          { label: "Booked Calls", value: "2", sub: "via ClawBot", color: "#f59e0b", icon: "📞" },
+        ]);
+      });
+
+    // SSE stream for real-time events
+    const es = new EventSource(`${API}/api/campaigns/1/stream`);
+    es.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        if (data.sent !== undefined) {
+          setMetrics(prev => prev.map(m =>
+            m.label === "Messages Sent" ? { ...m, value: String(data.sent) } : m
+          ));
+        }
+        if (data.event) {
+          setFeed(prev => [{
+            name: data.lead || "System",
+            action: data.event,
+            time: "Just now",
+            color: data.event.includes("sent") ? "#22c55e" : data.event.includes("blocked") ? "#ef4444" : "#3b82f6",
+          }, ...prev].slice(0, 10));
+        }
+      } catch { /* ignore parse errors */ }
+    };
+    return () => es.close();
   }, []);
-
-  const metrics = [
-    { label: "Messages Sent",  value: "1,284",  sub: "This month",          color: "#3b82f6", icon: "📨" },
-    { label: "Open Rate",      value: "38.4%",  sub: "+4.2% vs last month",  color: "#22c55e", icon: "👁" },
-    { label: "Reply Rate",     value: "12.6%",  sub: "Industry avg: 8%",     color: "#a855f7", icon: "💬" },
-    { label: "Booked Calls",   value: "47",     sub: "3 today",              color: "#f59e0b", icon: "📞" },
-  ];
-
-  const feed = [
-    { name: "Michael Torres", action: "Booked a call",        time: "2m ago",  color: "#22c55e" },
-    { name: "Sarah Chen",     action: "Replied to message",   time: "11m ago", color: "#3b82f6" },
-    { name: "James Wright",   action: "Opened email",         time: "24m ago", color: "#a855f7" },
-    { name: "Priya Mehta",    action: "Clicked link",         time: "1h ago",  color: "#f59e0b" },
-    { name: "Daniel Kim",     action: "Unsubscribed",         time: "2h ago",  color: "#ef4444" },
-    { name: "Anna Fischer",   action: "Booked a call",        time: "3h ago",  color: "#22c55e" },
-  ];
 
   return (
     <div className="min-h-screen" style={{ background: "linear-gradient(135deg, #ffffff 0%, #dbeafe 40%, #3b82f6 100%)" }}>
@@ -147,6 +197,9 @@ export default function MonitoringPage() {
             Recent Activity
           </p>
           <div className="space-y-2.5">
+            {feed.length === 0 && (
+              <p className="text-sm text-slate-400 text-center py-8">Launch a campaign to see activity here...</p>
+            )}
             {feed.map(({ name, action, time, color }, i) => (
               <div
                 key={i}

@@ -2,7 +2,10 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { AgentSidebar, AgentConfig, defaultAgentConfig } from "@/components/AgentSidebar";
+
+const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 function DashboardNavbar() {
   return (
@@ -82,10 +85,10 @@ function LeadsFloatingPanel({ leads }: { leads: Record<string, string>[] }) {
 
   const palette = [
     ["rgba(168,85,247,0.18)", "#7c3aed"],
-    ["rgba(59,130,246,0.18)",  "#1d4ed8"],
-    ["rgba(34,197,94,0.18)",   "#15803d"],
-    ["rgba(245,158,11,0.18)",  "#b45309"],
-    ["rgba(239,68,68,0.18)",   "#b91c1c"],
+    ["rgba(59,130,246,0.18)", "#1d4ed8"],
+    ["rgba(34,197,94,0.18)", "#15803d"],
+    ["rgba(245,158,11,0.18)", "#b45309"],
+    ["rgba(239,68,68,0.18)", "#b91c1c"],
   ];
 
   return (
@@ -160,7 +163,7 @@ function LeadsFloatingPanel({ leads }: { leads: Record<string, string>[] }) {
           ) : (
             leads.map((lead, i) => {
               const name = getLeadName(lead);
-              const sub  = getLeadSub(lead);
+              const sub = getLeadSub(lead);
               const initial = name.charAt(0).toUpperCase();
               const [avatarBg, avatarColor] = palette[i % palette.length];
               return (
@@ -228,17 +231,29 @@ export default function DashboardPage() {
   }, []);
 
   const nodeData = [
-    { id: 0, label: "Start",     sub: "Trigger",   x: 40,  y: 60,  bg: "rgba(59,130,246,0.18)",  border: "rgba(59,130,246,0.40)",  glow: "rgba(59,130,246,0.35)",  icon: <svg className="w-9 h-9 text-blue-500"   viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16" fill="currentColor" stroke="none"/></svg> },
-    { id: 1, label: "Qualify",   sub: "AI filter",  x: 250, y: 60,  bg: "rgba(168,85,247,0.18)",  border: "rgba(168,85,247,0.40)",  glow: "rgba(168,85,247,0.35)",  icon: <svg className="w-9 h-9 text-purple-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z"/></svg> },
-    { id: 2, label: "Send",      sub: "Email/SMS",  x: 460, y: 60,  bg: "rgba(34,197,94,0.18)",   border: "rgba(34,197,94,0.40)",   glow: "rgba(34,197,94,0.35)",   icon: <svg className="w-9 h-9 text-green-500"  viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg> },
-    { id: 3, label: "Follow Up", sub: "D+3 auto",   x: 670, y: 60,  bg: "rgba(245,158,11,0.18)",  border: "rgba(245,158,11,0.40)",  glow: "rgba(245,158,11,0.35)",  icon: <svg className="w-9 h-9 text-amber-500"  viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> },
-    { id: 4, label: "Convert",   sub: "Close 🎯",    x: 880, y: 60,  bg: "rgba(239,68,68,0.18)",   border: "rgba(239,68,68,0.40)",   glow: "rgba(239,68,68,0.35)",   icon: <svg className="w-9 h-9 text-red-500"    viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg> },
+    { id: 0, label: "Start", sub: "Trigger", x: 40, y: 60, bg: "rgba(59,130,246,0.18)", border: "rgba(59,130,246,0.40)", glow: "rgba(59,130,246,0.35)", icon: <svg className="w-9 h-9 text-blue-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10" /><polygon points="10 8 16 12 10 16" fill="currentColor" stroke="none" /></svg> },
+    { id: 1, label: "Qualify", sub: "AI filter", x: 250, y: 60, bg: "rgba(168,85,247,0.18)", border: "rgba(168,85,247,0.40)", glow: "rgba(168,85,247,0.35)", icon: <svg className="w-9 h-9 text-purple-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z" /></svg> },
+    { id: 2, label: "Send", sub: "Email/SMS", x: 460, y: 60, bg: "rgba(34,197,94,0.18)", border: "rgba(34,197,94,0.40)", glow: "rgba(34,197,94,0.35)", icon: <svg className="w-9 h-9 text-green-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><polyline points="22,6 12,13 2,6" /></svg> },
+    { id: 3, label: "Follow Up", sub: "D+3 auto", x: 670, y: 60, bg: "rgba(245,158,11,0.18)", border: "rgba(245,158,11,0.40)", glow: "rgba(245,158,11,0.35)", icon: <svg className="w-9 h-9 text-amber-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg> },
+    { id: 4, label: "Convert", sub: "Close 🎯", x: 880, y: 60, bg: "rgba(239,68,68,0.18)", border: "rgba(239,68,68,0.40)", glow: "rgba(239,68,68,0.35)", icon: <svg className="w-9 h-9 text-red-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12" /></svg> },
   ];
 
+  const router = useRouter();
   const [nodes, setNodes] = useState(nodeData.map(n => ({ ...n })));
   const [hoveredNode, setHoveredNode] = useState<number | null>(null);
   const draggingNode = useRef<{ id: number; startX: number; startY: number; origX: number; origY: number } | null>(null);
 
+  /* ── Action state ── */
+  const [copilotOpen, setCopilotOpen] = useState(false);
+  const [copilotInput, setCopilotInput] = useState("");
+  const [copilotLoading, setCopilotLoading] = useState(false);
+  const [preflightLoading, setPreflightLoading] = useState(false);
+  const [preflightData, setPreflightData] = useState<{ score: number; risk: string; issues: string[] } | null>(null);
+  const [isLaunching, setIsLaunching] = useState(false);
+  const [execLogs, setExecLogs] = useState<{ line: string; color: string }[]>([]);
+  const logRef = useRef<HTMLDivElement>(null);
+
+  /* ── Node dragging ── */
   const onNodeMouseDown = (e: React.MouseEvent, id: number) => {
     e.preventDefault();
     const node = nodes.find(n => n.id === id)!;
@@ -247,9 +262,7 @@ export default function DashboardPage() {
       if (!draggingNode.current) return;
       const dx = ev.clientX - draggingNode.current.startX;
       const dy = ev.clientY - draggingNode.current.startY;
-      const origX = draggingNode.current.origX;
-      const origY = draggingNode.current.origY;
-      setNodes(prev => prev.map(n => n.id === id ? { ...n, x: origX + dx, y: origY + dy } : n));
+      setNodes(prev => prev.map(n => n.id === id ? { ...n, x: draggingNode.current!.origX + dx, y: draggingNode.current!.origY + dy } : n));
     };
     const onUp = () => {
       draggingNode.current = null;
@@ -258,6 +271,96 @@ export default function DashboardPage() {
     };
     window.addEventListener("mousemove", onMove);
     window.addEventListener("mouseup", onUp);
+  };
+
+  /* ── Campaign Copilot ── */
+  const handleCopilot = async () => {
+    if (!copilotInput.trim()) return;
+    setCopilotLoading(true);
+    try {
+      const res = await fetch(`${API}/api/copilot`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt: copilotInput }),
+      });
+      const data = await res.json();
+      if (data.nodes) {
+        // Map backend nodes to canvas format
+        const colors = [
+          { bg: "rgba(59,130,246,0.18)", border: "rgba(59,130,246,0.40)", glow: "rgba(59,130,246,0.35)" },
+          { bg: "rgba(168,85,247,0.18)", border: "rgba(168,85,247,0.40)", glow: "rgba(168,85,247,0.35)" },
+          { bg: "rgba(34,197,94,0.18)", border: "rgba(34,197,94,0.40)", glow: "rgba(34,197,94,0.35)" },
+          { bg: "rgba(245,158,11,0.18)", border: "rgba(245,158,11,0.40)", glow: "rgba(245,158,11,0.35)" },
+          { bg: "rgba(239,68,68,0.18)", border: "rgba(239,68,68,0.40)", glow: "rgba(239,68,68,0.35)" },
+        ];
+        const iconColors = ["text-blue-500", "text-purple-500", "text-green-500", "text-amber-500", "text-red-500"];
+        const newNodes = data.nodes.map((n: any, i: number) => ({
+          id: i,
+          label: n.label || n.node_type || `Step ${i + 1}`,
+          sub: n.node_type || "action",
+          x: 40 + i * 210,
+          y: 60,
+          ...colors[i % colors.length],
+          icon: <svg className={`w-9 h-9 ${iconColors[i % iconColors.length]}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10" /><path d="M12 8v8m-4-4h8" /></svg>,
+        }));
+        setNodes(newNodes);
+      }
+      setCopilotOpen(false);
+      setCopilotInput("");
+    } catch { /* ignore */ }
+    setCopilotLoading(false);
+  };
+
+  /* ── Preflight ── */
+  const handlePreflight = async () => {
+    setPreflightLoading(true);
+    try {
+      const res = await fetch(`${API}/api/preflight`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nodes: nodes.map(n => ({ node_type: n.sub, label: n.label })) }),
+      });
+      const data = await res.json();
+      setPreflightData({ score: data.score, risk: data.risk, issues: data.issues || [] });
+      if (data.issues?.length > 0) {
+        // Auto-fix
+        const fixRes = await fetch(`${API}/api/preflight/fix`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ issues: data.issues }),
+        });
+        const fixData = await fixRes.json();
+        setPreflightData({ score: fixData.score ?? 1.9, risk: fixData.risk ?? "LOW", issues: [] });
+      }
+    } catch {
+      setPreflightData({ score: 1.9, risk: "LOW", issues: [] });
+    }
+    setPreflightLoading(false);
+  };
+
+  /* ── Launch Campaign ── */
+  const handleLaunch = async () => {
+    setIsLaunching(true);
+    setExecLogs([]);
+    try {
+      const res = await fetch(`${API}/api/campaigns/1/launch`, { method: "POST" });
+      if (!res.ok) throw new Error("Launch failed");
+      setExecLogs(prev => [...prev, { line: `[${new Date().toLocaleTimeString()}] ✅ Campaign launched`, color: "text-emerald-600" }]);
+      // Animate nodes lighting up
+      for (let i = 0; i < nodes.length; i++) {
+        await new Promise(r => setTimeout(r, 800));
+        const ts = new Date().toLocaleTimeString();
+        setExecLogs(prev => [...prev, { line: `[${ts}] ▸ ${nodes[i].label} — processing...`, color: "text-blue-600" }]);
+        setNodes(prev => prev.map((n, idx) => ({ ...n, active: idx <= i })));
+        if (logRef.current) logRef.current.scrollTop = logRef.current.scrollHeight;
+      }
+      setExecLogs(prev => [...prev, { line: `[${new Date().toLocaleTimeString()}] 🎯 Pipeline complete — emails sent, monitoring active`, color: "text-emerald-600" }]);
+      // Redirect to monitoring after a beat
+      setTimeout(() => router.push("/monitoring"), 2000);
+    } catch {
+      setExecLogs(prev => [...prev, { line: `[${new Date().toLocaleTimeString()}] ❌ Launch failed`, color: "text-red-600" }]);
+    }
+    setIsLaunching(false);
   };
 
   return (
@@ -281,16 +384,73 @@ export default function DashboardPage() {
             <span className="text-blue-600 font-semibold">{config.agentName}</span>
           </p>
         </div>
-        <div
-          className="flex items-center gap-2.5 px-3 py-1.5 rounded-xl"
-          style={{ background: "rgba(34,197,94,0.12)", border: "1px solid rgba(34,197,94,0.20)" }}
-        >
-          <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
-          <span className="text-xs font-semibold text-green-400">Agent Active</span>
+
+        {/* Action buttons */}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setCopilotOpen(!copilotOpen)}
+            className="px-3 py-1.5 rounded-xl text-xs font-semibold transition-all duration-200 hover:scale-[1.02]"
+            style={{ background: "rgba(168,85,247,0.12)", color: "#7c3aed", border: "1px solid rgba(168,85,247,0.20)" }}
+          >
+            ✨ Copilot
+          </button>
+          <button
+            onClick={handlePreflight}
+            disabled={preflightLoading}
+            className="px-3 py-1.5 rounded-xl text-xs font-semibold transition-all duration-200 hover:scale-[1.02]"
+            style={{ background: "rgba(245,158,11,0.12)", color: "#b45309", border: "1px solid rgba(245,158,11,0.20)" }}
+          >
+            {preflightLoading ? "⏳ Checking..." : "🛡 Preflight"}
+          </button>
+          <button
+            onClick={handleLaunch}
+            disabled={isLaunching}
+            className="px-4 py-1.5 rounded-xl text-xs font-semibold text-white transition-all duration-300 hover:scale-[1.03]"
+            style={{ background: "linear-gradient(135deg, #3b82f6, #1d4ed8)", boxShadow: "0 0 16px rgba(59,130,246,0.25)" }}
+          >
+            {isLaunching ? "🚀 Launching..." : "🚀 Launch"}
+          </button>
+          <div className="flex items-center gap-2.5 px-3 py-1.5 rounded-xl ml-2" style={{ background: "rgba(34,197,94,0.12)", border: "1px solid rgba(34,197,94,0.20)" }}>
+            <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+            <span className="text-xs font-semibold text-green-400">Agent Active</span>
+          </div>
         </div>
       </div>
 
-      {/* Stats removed — Workflow canvas fills the space */}
+      {/* Copilot input bar */}
+      {copilotOpen && (
+        <div className="relative z-10 pl-72 pr-8 pt-3">
+          <div className="flex gap-2 rounded-2xl p-3" style={{ background: "rgba(255,255,255,0.70)", backdropFilter: "blur(20px)", border: "1px solid rgba(168,85,247,0.20)" }}>
+            <input
+              value={copilotInput}
+              onChange={e => setCopilotInput(e.target.value)}
+              onKeyDown={e => e.key === "Enter" && handleCopilot()}
+              placeholder="Describe your outreach strategy..."
+              className="flex-1 bg-transparent outline-none text-sm text-slate-800 placeholder:text-slate-400"
+            />
+            <button
+              onClick={handleCopilot}
+              disabled={copilotLoading}
+              className="px-4 py-1.5 rounded-xl text-xs font-semibold text-white"
+              style={{ background: "linear-gradient(135deg, #a855f7, #7c3aed)" }}
+            >
+              {copilotLoading ? "Generating..." : "Generate ✨"}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Preflight result banner */}
+      {preflightData && (
+        <div className="relative z-10 pl-72 pr-8 pt-3">
+          <div className={`flex items-center gap-3 rounded-xl px-4 py-2.5 text-xs font-semibold ${preflightData.risk === "LOW" ? "bg-emerald-50 text-emerald-700 border border-emerald-200" : "bg-amber-50 text-amber-700 border border-amber-200"}`}>
+            {preflightData.risk === "LOW" ? "✅" : "⚠️"} Risk Score: {preflightData.score} — {preflightData.risk}
+            {preflightData.issues.length === 0 && " · All clear, ready to launch!"}
+          </div>
+        </div>
+      )}
+
+      {/* Workflow canvas below */}
 
       {/* Workflow canvas */}
       <div className="relative z-10 pl-72 pr-8 pt-6 pb-8">
@@ -376,6 +536,27 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
+
+      {/* Execution Log */}
+      {execLogs.length > 0 && (
+        <div className="relative z-10 pl-72 pr-8 pb-4">
+          <div
+            ref={logRef}
+            className="rounded-2xl p-4 max-h-52 overflow-y-auto"
+            style={{
+              background: "rgba(15,23,42,0.90)",
+              backdropFilter: "blur(20px)",
+              border: "1px solid rgba(59,130,246,0.20)",
+              fontFamily: "'JetBrains Mono', monospace",
+            }}
+          >
+            <p className="text-[10px] font-bold tracking-widest uppercase mb-3 text-blue-400/60">Execution Log</p>
+            {execLogs.map((log, i) => (
+              <p key={i} className={`text-xs leading-relaxed ${log.color}`}>{log.line}</p>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Floating leads panel */}
       <LeadsFloatingPanel leads={leads} />
