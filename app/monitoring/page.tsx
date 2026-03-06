@@ -69,8 +69,8 @@ function MonitoringNavbar() {
 /* ─── Milestone stages ─── */
 const STAGES = [
   { key: "email_sent", icon: "📧", label: "Sent", color: "#3b82f6" },
-  { key: "email_opened", icon: "👁", label: "Opened", color: "#22c55e" },
   { key: "reply_received", icon: "💬", label: "Replied", color: "#a855f7" },
+  { key: "positive_intent", altKey: "objection_detected", icon: "🦅", label: "ClawBot", color: "#f59e0b" },
   { key: "meeting_booked", icon: "📅", label: "Meeting", color: "#06b6d4" },
 ];
 
@@ -229,7 +229,7 @@ export default function MonitoringPage() {
                     {/* Horizontal Milestones */}
                     <div className="flex-1 flex items-center">
                       {STAGES.map((stage, i) => {
-                        const reached = eventTypes.includes(stage.key);
+                        const reached = eventTypes.includes(stage.key) || (stage.altKey && eventTypes.includes(stage.altKey));
                         const isLast = i === STAGES.length - 1;
                         return (
                           <div key={stage.key} className="flex items-center" style={{ flex: isLast ? "0 0 auto" : 1 }}>
@@ -310,7 +310,7 @@ export default function MonitoringPage() {
               {/* Stage Progress */}
               <div className="flex items-center justify-between mb-5 px-2">
                 {STAGES.map((stage, i) => {
-                  const reached = (selectedLeadData.events || []).some(e => e.type === stage.key);
+                  const reached = (selectedLeadData.events || []).some(e => e.type === stage.key || e.type === stage.altKey);
                   return (
                     <div key={stage.key} className="flex flex-col items-center" style={{ flex: 1 }}>
                       <div

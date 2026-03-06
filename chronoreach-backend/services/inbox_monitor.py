@@ -313,14 +313,35 @@ async def inbox_monitor_loop():
             replies = await asyncio.to_thread(_poll_gmail_once)
 
             for reply in replies:
-                print(f"[InboxMonitor] 📬 Processing reply from {reply['sender']}: {reply['subject']}")
+                sender = reply["sender"]
+                subject = reply["subject"]
+                body = reply["body"]
+
+                # Detect Cal.com booking confirmation emails
+                is_cal = (
+                    "cal.com" in sender or
+                    "cal.com" in subject.lower() or
+                    "new event" in subject.lower() or
+                    "meeting is scheduled" in body.lower() or
+                    "this meeting is scheduled" in body.lower()
+                )
+                if is_cal:
+                    print(f"[InboxMonitor] 📅 Cal.com booking email detected: {subject}")
+                    from routers.cal import process_cal_booking_email
+                    async with AsyncSessionLocal() as db:
+                        await process_cal_booking_email(subject, body, db)
+                    continue
+
+                # Regular lead reply processing
+                print(f"[InboxMonitor] 📬 Processing reply from {sender}: {subject}")
                 await _process_reply(
-                    sender_email=reply["sender"],
-                    subject=reply["subject"],
-                    body=reply["body"],
+                    sender_email=sender,
+                    subject=subject,
+                    body=body,
                 )
 
         except Exception as e:
             print(f"[InboxMonitor] ❌ Loop error: {e}")
 
         await asyncio.sleep(POLL_INTERVAL)
+
