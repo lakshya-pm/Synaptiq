@@ -39,7 +39,7 @@ def build_hot_lead_alert(lead: dict, draft: str, opens: int) -> str:
     return f"""🦅 ClawBot Alert
 ─────────────────────────────────
 🔥 Hot lead: {lead.get('first_name', '')} {lead.get('last_name', '')} ({lead.get('title', '')}, {lead.get('company', '')})
-   Opened your email {opens}x in 2 hours
+   Opened your email {opens}x
 
 Ready to send follow-up?
 "{draft[:120]}..."

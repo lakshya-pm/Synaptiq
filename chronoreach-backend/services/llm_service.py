@@ -43,17 +43,35 @@ try:
 except Exception:
     pass
 
-DEFAULT_FIXTURE = {
-    "subject": "Quick question about your payments stack",
-    "body": (
-        "Hi {first_name}, noticed your team at {company} is scaling fast. "
-        "Had a quick thought on how we helped a similar fintech cut outreach "
-        "time by 6 hours a week. Worth a 15-min chat?"
-    ),
-    "hooks_used": ["company", "title"],
-    "word_count": 42,
-    "language": "en",
-}
+FALLBACK_TEMPLATES = [
+    {
+        "subject": "Quick thought for {company}",
+        "body": "Hi {first_name}, noticed {company} is scaling fast. Had a quick idea on how we helped a similar team cut outreach time by 6 hours a week. Worth a 15-min chat?",
+        "hooks_used": ["company"],
+    },
+    {
+        "subject": "Saw something interesting about {company}",
+        "body": "Hi {first_name}, came across {company}'s recent growth and it reminded me of a pattern we see with high-performing teams. Would love to share a quick insight — open to a brief chat this week?",
+        "hooks_used": ["company", "insight"],
+    },
+    {
+        "subject": "{first_name} — one idea for {company}",
+        "body": "Hi {first_name}, been following what {company} is building and I think there's a way to 3x your outreach efficiency without adding headcount. Happy to walk you through it if you have 10 minutes.",
+        "hooks_used": ["company", "title"],
+    },
+    {
+        "subject": "For {first_name} at {company}",
+        "body": "Hi {first_name}, we recently helped a team similar to {company} automate their outreach pipeline and save 8+ hours per week. Thought it might be relevant for you — worth a quick look?",
+        "hooks_used": ["company"],
+    },
+    {
+        "subject": "{company} + Synaptiq?",
+        "body": "Hi {first_name}, quick one — I think {company} could benefit from what we're building. We help teams like yours turn cold outreach into warm conversations at scale. Open to a 10-min intro call?",
+        "hooks_used": ["company", "title"],
+    },
+]
+
+DEFAULT_FIXTURE = FALLBACK_TEMPLATES[0]
 
 # ---------------------------------------------------------------------------
 # Gemini helper patterns
@@ -197,7 +215,34 @@ Return JSON:
         except Exception:
             fixture_key = lead.get("email", "default")
             step_key = f"step_{step}"
-            return FIXTURES.get(fixture_key, {}).get(step_key, DEFAULT_FIXTURE.copy())
+            fixture_result = FIXTURES.get(fixture_key, {}).get(step_key, None)
+            if fixture_result:
+                raw = fixture_result
+            else:
+                # Pick a unique template per lead based on email hash
+                idx = hash(lead.get("email", "")) % len(FALLBACK_TEMPLATES)
+                raw = FALLBACK_TEMPLATES[idx].copy()
+            # Substitute lead data into template strings
+            subs = {
+                "first_name": lead.get("first_name", "there"),
+                "last_name": lead.get("last_name", ""),
+                "company": lead.get("company", "your company"),
+                "title": lead.get("title", ""),
+                "insight": lead.get("insight", ""),
+                "linkedin_headline": lead.get("linkedin_headline", ""),
+            }
+            if isinstance(raw, dict):
+                result = {}
+                for k, v in raw.items():
+                    if isinstance(v, str):
+                        try:
+                            result[k] = v.format_map(subs)
+                        except (KeyError, ValueError):
+                            result[k] = v
+                    else:
+                        result[k] = v
+                return result
+            return raw
 
     # --- Hindi Email ---
 

@@ -15,8 +15,8 @@ DEFAULT_WORKFLOW = {
         {"id": "t1", "node_type": "trigger", "label": "Start", "config": {}},
         {"id": "b1", "node_type": "blocklist", "label": "Blocklist Filter", "config": {"domains": ["zoho.com", "salesforce.com", "hubspot.com"]}},
         {"id": "m1", "node_type": "ai_message", "label": "Draft Intro Email", "config": {"step": 1}},
-        {"id": "d1", "node_type": "delay", "label": "Wait 24-36h", "config": {"delay_hours": 30}},
-        {"id": "s1", "node_type": "send_email", "label": "Send Intro", "config": {}},
+        {"id": "d1", "node_type": "delay", "label": "Jitter Delay", "config": {"delay_hours": 1}},
+        {"id": "s1", "node_type": "send_email", "label": "Send Email", "config": {}},
     ],
     "edges": [
         {"source": "t1", "target": "b1"},

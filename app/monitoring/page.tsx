@@ -152,18 +152,18 @@ export default function MonitoringPage() {
           className="flex items-center gap-2.5 px-3 py-1.5 rounded-xl"
           style={{ background: "rgba(34,197,94,0.12)", border: "1px solid rgba(34,197,94,0.20)" }}
         >
-          <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+          <div className="w-2 h-2 rounded-full bg-green-400 animate-live-dot" />
           <span className="text-xs font-semibold text-green-400">Live</span>
         </div>
       </div>
 
       {/* Metric cards */}
       <div className="relative z-10 pl-72 pr-8 pt-6">
-        <div className="grid grid-cols-4 gap-4">
+        <div className="grid grid-cols-4 gap-4 stagger-children">
           {metrics.map(({ label, value, sub, color, icon }) => (
             <div
               key={label}
-              className="rounded-2xl p-4"
+              className="rounded-2xl p-4 glass-card-hover animate-fade-in-up"
               style={{
                 background: "rgba(255,255,255,0.65)",
                 backdropFilter: "blur(20px) saturate(1.8)",
@@ -203,7 +203,7 @@ export default function MonitoringPage() {
             {feed.map(({ name, action, time, color }, i) => (
               <div
                 key={i}
-                className="flex items-center gap-4 py-3 px-4 rounded-xl"
+                className="flex items-center gap-4 py-3 px-4 rounded-xl animate-fade-in-up glass-card-hover"
                 style={{
                   background: "rgba(255,255,255,0.70)",
                   border: "1px solid rgba(255,255,255,0.90)",
