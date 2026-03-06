@@ -27,7 +27,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-from routers import leads, workflows, campaigns, preflight, copilot, monitor, clawbot, cal, persona, autopsy
+from routers import leads, workflows, campaigns, preflight, copilot, monitor, clawbot, cal, persona, autopsy, track, simulate
 
 app.include_router(leads.router)
 app.include_router(workflows.router)
@@ -39,6 +39,8 @@ app.include_router(clawbot.router)
 app.include_router(cal.router)
 app.include_router(persona.router)
 app.include_router(autopsy.router)
+app.include_router(track.router)
+app.include_router(simulate.router)
 
 @app.get("/")
 def read_root():

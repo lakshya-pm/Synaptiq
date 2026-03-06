@@ -80,7 +80,7 @@ class Event(Base):
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     campaign_id = Column(Integer, ForeignKey("campaigns.id"), nullable=False)
     lead_id = Column(Integer, ForeignKey("leads.id"), nullable=False)
-    node_id = Column(String, ForeignKey("workflow_nodes.id"), nullable=True)
+    node_id = Column(String, nullable=True)  # Can be workflow node ID or system ID like 'tracking_pixel'
     event_type = Column(String, nullable=False)
     payload = Column(JSON, nullable=True)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)

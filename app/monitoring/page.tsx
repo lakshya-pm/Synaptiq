@@ -183,7 +183,7 @@ export default function MonitoringPage() {
       </div>
 
       {/* Activity feed */}
-      <div className="relative z-10 pl-72 pr-8 pt-6 pb-8">
+      <div className="relative z-10 pl-72 pr-8 pt-6 pb-4">
         <div
           className="rounded-3xl p-6"
           style={{
@@ -196,7 +196,7 @@ export default function MonitoringPage() {
           <p className="text-[11px] font-bold tracking-widest uppercase mb-6 text-slate-400">
             Recent Activity
           </p>
-          <div className="space-y-2.5">
+          <div className="space-y-2.5 max-h-64 overflow-y-auto">
             {feed.length === 0 && (
               <p className="text-sm text-slate-400 text-center py-8">Launch a campaign to see activity here...</p>
             )}
@@ -223,8 +223,122 @@ export default function MonitoringPage() {
         </div>
       </div>
 
+      {/* Demo Controls */}
+      <DemoControls API={API} onEvent={(ev: { name: string; action: string; time: string; color: string }) => setFeed(prev => [ev, ...prev].slice(0, 15))} />
+
       {/* Draggable sidebar */}
       <AgentSidebar config={config} activePage="monitoring" />
+    </div>
+  );
+}
+
+/* ─── Demo Controls Component ─── */
+function DemoControls({ API, onEvent }: { API: string; onEvent: (ev: { name: string; action: string; time: string; color: string }) => void }) {
+  const [leads, setLeads] = useState<{ id: number; name: string; company: string; email: string; status: string }[]>([]);
+  const [loading, setLoading] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    fetch(`${API}/api/campaigns/1/status`)
+      .then(r => r.json())
+      .then(data => {
+        if (data.lead_progress) setLeads(data.lead_progress);
+      })
+      .catch(() => { });
+  }, [API]);
+
+  const doAction = async (action: string, leadId: number, leadName: string) => {
+    const key = `${action}-${leadId}`;
+    setLoading(prev => ({ ...prev, [key]: true }));
+    try {
+      const res = await fetch(`${API}/api/simulate/${action}/${leadId}`, { method: "POST" });
+      const data = await res.json();
+
+      const icons: Record<string, string> = { open: "👁", reply: "🧠", positive: "✅" };
+      const labels: Record<string, string> = {
+        open: data.clawbot ? `Opened email — ClawBot triggered!` : `Opened email (${data.total_opens || "?"}x)`,
+        reply: `Objection detected: ${data.type || "timing"} (${Math.round((data.confidence || 0.9) * 100)}%)`,
+        positive: "Positive intent — meeting flow triggered",
+      };
+      const colors: Record<string, string> = { open: "#22c55e", reply: "#a855f7", positive: "#f59e0b" };
+
+      onEvent({
+        name: leadName,
+        action: `${icons[action] || "▸"} ${labels[action] || action}`,
+        time: new Date().toLocaleTimeString(),
+        color: colors[action] || "#3b82f6",
+      });
+    } catch {
+      onEvent({ name: leadName, action: `❌ ${action} failed`, time: "Error", color: "#ef4444" });
+    }
+    setLoading(prev => ({ ...prev, [key]: false }));
+  };
+
+  if (leads.length === 0) return null;
+
+  return (
+    <div className="relative z-10 pl-72 pr-8 pb-8">
+      <div
+        className="rounded-3xl p-6"
+        style={{
+          background: "rgba(255,255,255,0.55)",
+          backdropFilter: "blur(24px) saturate(1.8)",
+          border: "1px solid rgba(245,158,11,0.25)",
+          boxShadow: "0 8px 40px rgba(245,158,11,0.08)",
+        }}
+      >
+        <div className="flex items-center gap-2 mb-5">
+          <span className="text-base">🎮</span>
+          <p className="text-[11px] font-bold tracking-widest uppercase text-amber-600">
+            Demo Controls
+          </p>
+          <span className="text-[10px] text-amber-500 font-medium ml-2 px-2 py-0.5 rounded-full bg-amber-50 border border-amber-200">
+            Simulate Events
+          </span>
+        </div>
+        <div className="space-y-2.5">
+          {leads.map((lead) => (
+            <div
+              key={lead.id}
+              className="flex items-center gap-3 py-2.5 px-4 rounded-xl"
+              style={{ background: "rgba(255,255,255,0.70)", border: "1px solid rgba(255,255,255,0.90)" }}
+            >
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-slate-800 truncate">{lead.name}</p>
+                <p className="text-[11px] text-slate-400 truncate">{lead.company || lead.email}</p>
+              </div>
+              <div className="flex items-center gap-1.5 shrink-0">
+                <button
+                  onClick={() => doAction("open", lead.id, lead.name)}
+                  disabled={loading[`open-${lead.id}`]}
+                  className="px-2.5 py-1.5 rounded-lg text-[11px] font-semibold transition-all hover:scale-105 disabled:opacity-50"
+                  style={{ background: "rgba(34,197,94,0.12)", color: "#15803d", border: "1px solid rgba(34,197,94,0.20)" }}
+                  title="Simulate email open (click 2-3 times for ClawBot)"
+                >
+                  {loading[`open-${lead.id}`] ? "..." : "👁 Open"}
+                </button>
+                <button
+                  onClick={() => doAction("reply", lead.id, lead.name)}
+                  disabled={loading[`reply-${lead.id}`]}
+                  className="px-2.5 py-1.5 rounded-lg text-[11px] font-semibold transition-all hover:scale-105 disabled:opacity-50"
+                  style={{ background: "rgba(168,85,247,0.12)", color: "#7c3aed", border: "1px solid rgba(168,85,247,0.20)" }}
+                  title="Simulate objection reply — triggers ClawBot objection handler"
+                >
+                  {loading[`reply-${lead.id}`] ? "..." : "🧠 Objection"}
+                </button>
+                <button
+                  onClick={() => doAction("positive", lead.id, lead.name)}
+                  disabled={loading[`positive-${lead.id}`]}
+                  className="px-2.5 py-1.5 rounded-lg text-[11px] font-semibold transition-all hover:scale-105 disabled:opacity-50"
+                  style={{ background: "rgba(245,158,11,0.12)", color: "#b45309", border: "1px solid rgba(245,158,11,0.20)" }}
+                  title="Simulate positive reply — triggers meeting booking"
+                >
+                  {loading[`positive-${lead.id}`] ? "..." : "📅 Meeting"}
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }

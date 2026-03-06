@@ -9,6 +9,10 @@ from pathlib import Path
 _env_file = Path(__file__).resolve().parent.parent.parent / ".env"
 load_dotenv(_env_file, override=True)
 
+# Backend URL for tracking pixel
+BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:8000")
+
+
 class EmailSender:
     def __init__(self):
         self.mock_mode = os.getenv("MOCK_MODE", "true").lower() == "true"
@@ -18,7 +22,8 @@ class EmailSender:
         self.smtp_pass = os.getenv("SMTP_PASS", "")
         print(f"[EmailSender] MOCK_MODE={self.mock_mode} | SMTP_USER={self.smtp_user}")
 
-    async def send(self, to: str, subject: str, body: str):
+    async def send(self, to: str, subject: str, body: str,
+                   campaign_id: int = 1, lead_id: int = 0):
         if self.mock_mode:
             print(f"[MOCK EMAIL] To: {to} | Subject: {subject}")
             return True
@@ -32,13 +37,17 @@ class EmailSender:
             # Plain text
             msg.attach(MIMEText(body, "plain"))
             
-            # HTML version
+            # Tracking pixel URL
+            pixel_url = f"{BACKEND_URL}/api/track/{campaign_id}/{lead_id}/open.png"
+            
+            # HTML version with tracking pixel
             html = f"""<div style="font-family:'Segoe UI',Arial,sans-serif;max-width:600px;margin:0 auto;color:#1e293b">
     <p style="font-size:15px;line-height:1.7">{body.replace(chr(10), '<br>')}</p>
     <hr style="border:none;border-top:1px solid #e2e8f0;margin:28px 0 16px">
     <p style="font-size:11px;color:#94a3b8;line-height:1.5">
         Sent via <b style="color:#3b82f6">Synaptiq</b> — AI-powered outreach
     </p>
+    <img src="{pixel_url}" width="1" height="1" style="display:none" alt="" />
 </div>"""
             msg.attach(MIMEText(html, "html"))
             
@@ -47,7 +56,7 @@ class EmailSender:
                 if self.smtp_user and self.smtp_pass:
                     server.login(self.smtp_user, self.smtp_pass)
                 server.send_message(msg)
-            print(f"[EMAIL SENT] ✅ To: {to} | Subject: {subject}")
+            print(f"[EMAIL SENT] ✅ To: {to} | Subject: {subject} | Pixel: {pixel_url}")
             return True
         except Exception as e:
             print(f"[EMAIL ERROR] ❌ Failed sending to {to}: {e}")

@@ -388,6 +388,60 @@ Write ONLY the response email body."""
             except Exception:
                 return "Thanks for getting back to me. I appreciate your time."
 
+    async def classify_objection(self, reply_text: str) -> dict:
+        """Classify an objection reply into type + confidence."""
+        try:
+            prompt = f"""Classify this sales objection reply into ONE type:
+- timing (they want to wait/revisit later)
+- competitor (locked in with a competitor)
+- budget (no budget/too expensive)
+- authority (need to check with someone else)
+- no_need (not interested/not relevant)
+
+Reply: "{reply_text}"
+
+Respond as JSON: {{"type": "...", "confidence": 0.0-1.0}}"""
+            response = lite_model.generate_content(prompt)
+            text = response.text.strip()
+            text = text.replace("```json", "").replace("```", "").strip()
+            return json.loads(text)
+        except Exception:
+            # Smart fallback based on keywords
+            lower = reply_text.lower()
+            if any(w in lower for w in ["quarter", "later", "next", "revisit", "timing"]):
+                return {"type": "timing", "confidence": 0.92}
+            elif any(w in lower for w in ["hubspot", "salesforce", "competitor", "locked", "using"]):
+                return {"type": "competitor", "confidence": 0.88}
+            elif any(w in lower for w in ["budget", "cost", "expensive", "price"]):
+                return {"type": "budget", "confidence": 0.85}
+            return {"type": "timing", "confidence": 0.80}
+
+    async def generate_objection_response(self, lead: dict, objection_type: str, original_reply: str) -> str:
+        """Generate an empathetic objection response email body."""
+        try:
+            prompt = f"""Write a short, empathetic response to this sales objection.
+Lead: {lead.get('first_name', '')} {lead.get('last_name', '')} at {lead.get('company', '')}
+Objection type: {objection_type}
+Their reply: "{original_reply}"
+
+Rules:
+- Be warm and understanding, NOT pushy
+- Keep it under 4 sentences
+- If timing objection, suggest following up later
+- If competitor objection, acknowledge their choice gracefully
+- End with an open door
+
+Write ONLY the email body, no subject line."""
+            response = lite_model.generate_content(prompt)
+            return response.text.strip()
+        except Exception:
+            name = lead.get("first_name", "there")
+            if objection_type == "timing":
+                return f"That's totally fair {name} — Q2 is when most teams re-evaluate. I'll reach out then. One thing in the meantime — happy to share a quick case study that might be useful when you do revisit?"
+            elif objection_type == "competitor":
+                return f"Completely understand {name} — {lead.get('company', 'your team')} clearly takes their stack seriously. If things change, we'd love to chat. In the meantime, here's a one-pager on what makes us different."
+            return f"Thanks for the honest reply {name}. I won't be pushy — just know we're here if things change. Wishing you and {lead.get('company', 'the team')} the best!"
+
 
 # Singleton instance — routers import this
 llm_service = LLMService()

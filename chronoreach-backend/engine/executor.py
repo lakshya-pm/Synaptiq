@@ -279,7 +279,8 @@ class WorkflowExecutor:
         body = msg.get("body", f"Hi {lead.first_name}, wanted to connect about what you're building at {lead.company}.")
         
         print(f"[Executor] 📧 Sending email to {lead.email}: {subject}")
-        success = await email_sender.send(lead.email, subject, body)
+        success = await email_sender.send(lead.email, subject, body,
+                                           campaign_id=self.campaign_id, lead_id=lead.id)
         
         if success:
             await self._log_event(lead.id, node["id"], "email_sent", {
