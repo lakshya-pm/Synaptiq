@@ -279,16 +279,17 @@ class WorkflowExecutor:
                                    args=[self.campaign_id, lead.id, next_node_id])
 
     async def _handle_send_email(self, node, lead, session):
-        # Safety: check rate limits before sending
-        allowed, reason = await is_send_allowed(self.campaign_id, session)
-        if not allowed:
-            await self._log_event(lead.id, node["id"], "send_rate_limited", {
-                "reason": reason,
-                "lead_name": f"{lead.first_name} {lead.last_name}",
-                "company": lead.company
-            }, session)
-            print(f"[Executor] 🛑 Rate limited for {lead.email}: {reason}")
-            return
+        # Safety: check rate limits before sending (skip in demo mode)
+        if not DEMO_MODE:
+            allowed, reason = await is_send_allowed(self.campaign_id, session)
+            if not allowed:
+                await self._log_event(lead.id, node["id"], "send_rate_limited", {
+                    "reason": reason,
+                    "lead_name": f"{lead.first_name} {lead.last_name}",
+                    "company": lead.company
+                }, session)
+                print(f"[Executor] 🛑 Rate limited for {lead.email}: {reason}")
+                return
 
         cl_stmt = select(CampaignLead).where(CampaignLead.campaign_id==self.campaign_id, CampaignLead.lead_id==lead.id)
         cl = (await session.execute(cl_stmt)).scalar_one_or_none()
