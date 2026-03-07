@@ -2,7 +2,10 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { AgentSidebar, AgentConfig, defaultAgentConfig } from "@/components/AgentSidebar";
+
+const ContextPanel = dynamic(() => import("@/components/ContextPanel"), { ssr: false });
 
 /* ─── Types ─── */
 interface LeadEvent {
@@ -85,6 +88,7 @@ export default function MonitoringPage() {
   const [shieldFlash, setShieldFlash] = useState(false);
   const [callingLeadId, setCallingLeadId] = useState<number | null>(null);
   const [callStatus, setCallStatus] = useState<Record<number, string>>({});
+  const [contextLeadId, setContextLeadId] = useState<number | null>(null);
 
   const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -293,6 +297,16 @@ export default function MonitoringPage() {
                       </span>
                     )}
 
+                    {/* Context button */}
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setContextLeadId(lead.id); }}
+                      className="shrink-0 flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold text-blue-600 transition-all duration-200 hover:scale-105 active:scale-95"
+                      style={{ background: "rgba(59,130,246,0.08)", border: "1px solid rgba(59,130,246,0.15)" }}
+                      title="View conversation context"
+                    >
+                      <span>📋</span> Context
+                    </button>
+
                     {/* Call Lead button */}
                     <button
                       onClick={(e) => {
@@ -450,6 +464,11 @@ export default function MonitoringPage() {
       </div>
 
       <AgentSidebar config={config} activePage="monitoring" />
+
+      {/* Context Panel */}
+      {contextLeadId !== null && (
+        <ContextPanel leadId={contextLeadId} onClose={() => setContextLeadId(null)} />
+      )}
     </div>
   );
 }
