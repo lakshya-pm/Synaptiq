@@ -519,7 +519,7 @@ export default function DashboardPage() {
 
       {/* Pipeline Canvas */}
       <div className="relative z-10 pl-72 pr-8 pt-6 pb-2">
-        <div className="rounded-3xl p-8 relative overflow-visible" style={{ background: "rgba(255,255,255,0.55)", backdropFilter: "blur(24px) saturate(1.8)", border: "1px solid rgba(255,255,255,0.85)", boxShadow: "0 8px 40px rgba(0,0,0,0.08)", minHeight: 340 }}>
+        <div className="rounded-3xl p-8 relative overflow-x-auto overflow-y-visible" style={{ background: "rgba(255,255,255,0.55)", backdropFilter: "blur(24px) saturate(1.8)", border: "1px solid rgba(255,255,255,0.85)", boxShadow: "0 8px 40px rgba(0,0,0,0.08)", minHeight: 340, scrollbarWidth: "thin" as any }}>
           <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: "radial-gradient(circle, rgba(59,130,246,0.12) 1px, transparent 1px)", backgroundSize: "28px 28px" }} />
           <p className="text-[11px] font-bold tracking-widest uppercase mb-10 relative z-10 text-slate-400">Pipeline</p>
 

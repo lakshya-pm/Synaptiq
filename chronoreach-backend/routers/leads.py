@@ -119,3 +119,68 @@ async def list_leads(page: int = 1, limit: int = 20, search: str = "", db: Async
     stmt = stmt.offset(offset).limit(limit)
     res = await db.execute(stmt)
     return res.scalars().all()
+
+
+# ─── POST /api/leads/{lead_id}/auto-reply ────────────────────────────────
+@router.post("/{lead_id}/auto-reply")
+async def send_auto_reply(lead_id: int, db: AsyncSession = Depends(get_db)):
+    """Send a follow-up email asking the lead for their best call time."""
+    from engine.email_sender import EmailSender
+    from models import Event, Campaign
+    from engine.event_bus import event_bus
+
+    lead = await db.scalar(select(Lead).where(Lead.id == lead_id))
+    if not lead:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=404, detail="Lead not found")
+
+    lead_name = f"{lead.first_name} {lead.last_name}".strip() or "there"
+    company = lead.company or "your company"
+
+    subject = f"Thanks for your interest, {lead_name}!"
+    body = (
+        f"Hi {lead_name},\n\n"
+        f"Great to hear back from you! I'd love to schedule a quick call to discuss "
+        f"how we can help {company} grow.\n\n"
+        f"What time works best for you this week? Just reply with your preferred "
+        f"date and time, and I'll set it up.\n\n"
+        f"Looking forward to connecting!\n\n"
+        f"Best regards,\nSynaptiq AI Agent"
+    )
+
+    sender = EmailSender()
+    success = await sender.send(
+        to=lead.email,
+        subject=subject,
+        body=body,
+        campaign_id=1,
+        lead_id=lead_id,
+    )
+
+    if success:
+        # Log event
+        ev = Event(
+            campaign_id=1,
+            lead_id=lead_id,
+            node_id="auto_reply",
+            event_type="follow_up_sent",
+            payload={
+                "subject": subject,
+                "to": lead.email,
+                "lead_name": lead_name,
+                "company": company,
+            },
+        )
+        db.add(ev)
+        await db.commit()
+        await db.refresh(ev)
+        event_bus.publish({
+            "id": ev.id, "campaign_id": 1, "lead_id": lead_id,
+            "node_id": "auto_reply", "event_type": "follow_up_sent",
+            "payload": ev.payload,
+        })
+        print(f"[AutoReply] ✅ Sent follow-up to {lead.email} — {lead_name}")
+        return {"status": "sent", "message": f"Follow-up email sent to {lead.email}"}
+
+    return {"status": "failed", "message": "Failed to send email"}
+

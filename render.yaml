@@ -1,0 +1,58 @@
+services:
+  - type: web
+    name: synaptiq-backend
+    env: python
+    rootDir: chronoreach-backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      - key: MOCK_MODE
+        value: "false"
+      - key: DEMO_MODE
+        value: "true"
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GROQ_API_KEY
+        sync: false
+      - key: SARVAM_API_KEY
+        sync: false
+      - key: TAVILY_API_KEY
+        sync: false
+      - key: TWILIO_SID
+        sync: false
+      - key: TWILIO_AUTH
+        sync: false
+      - key: TWILIO_WHATSAPP_FROM
+        sync: false
+      - key: USER_PHONE
+        sync: false
+      - key: SMTP_HOST
+        value: "smtp.gmail.com"
+      - key: SMTP_PORT
+        value: "587"
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+      - key: CAL_URL
+        sync: false
+      - key: TRACKING_URL
+        sync: false
+      - key: BLAND_API_KEY
+        sync: false
+
+  - type: web
+    name: synaptiq-frontend
+    env: node
+    buildCommand: npm install && npm run build
+    startCommand: npm run start
+    envVars:
+      - key: NODE_VERSION
+        value: 20
+      - key: NEXT_PUBLIC_API_URL
+        fromService:
+          type: web
+          name: synaptiq-backend
+          envVarKey: RENDER_EXTERNAL_URL
