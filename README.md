@@ -178,6 +178,28 @@ Open **http://localhost:3000** 🎉
 
 ---
 
+## ☁️ Deployment (Cloud Computing Project)
+
+This project is configured for cloud deployment on **Render**, demonstrating a modern, production-ready full-stack architecture. The repository serves as the complete documentation for the deployment process.
+
+### 1. Render Blueprint (`render.yaml`)
+The project uses Infrastructure as Code (IaC) via a `render.yaml` Blueprint to define two microservices:
+1. **`synaptiq-backend`**: A Python Web Service running FastAPI (`uvicorn`) on port `$PORT`.
+2. **`synaptiq-frontend`**: A Node Web Service running the Next.js production build (`npm run start`).
+
+### 2. Python Version Pinning
+Due to compiled C-extension constraints in data analysis libraries (`pandas`), the runtime environment is explicitly pinned to Python 3.11 using a `.python-version` file. This prevents the cloud provider from defaulting to incompatible newer versions (like Python 3.14).
+
+### 3. Environment Variable Injection
+Secrets and configurations are securely injected at runtime and build time:
+- The backend relies on multiple external AI and communication APIs (Gemini, Groq, Twilio, Gmail SMTP, Bland.ai).
+- The frontend dynamically binds to the backend via the `NEXT_PUBLIC_API_URL` environment variable, ensuring seamless server-to-client communication across Render's private and public networks.
+
+### 4. Continuous Deployment
+By connecting this GitHub repository directly to Render, any pushed changes automatically trigger a fresh containerized build and zero-downtime deployment.
+
+---
+
 ## 📁 Project Structure
 
 ```
